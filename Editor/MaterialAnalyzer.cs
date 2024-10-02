@@ -38,6 +38,11 @@ public class MaterialAnalyzer : EditorWindow
         InitColumns();
     }
 
+    void OnDisable()
+    {
+        EditorApplication.hierarchyChanged -= OnHierarchyChange;
+    }
+
     void InitColumns()
     {
         columns = new MultiColumnHeaderState.Column[]
