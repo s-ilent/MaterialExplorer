@@ -143,59 +143,62 @@ public class MaterialAnalyzer : EditorWindow
     }
 void OnGUI()
 {
-    if (analyzerList.Count > 0)
+    if (analyzerList == null || analyzerList.Count == 0)
     {
-        GUILayout.BeginVertical();
-        scrollPos = GUILayout.BeginScrollView(scrollPos, false, true); 
+        OnEnable();
+        return;
+    }
 
-        Rect headerRect = GUILayoutUtility.GetRect(0, columnHeader.height, GUILayout.ExpandWidth(true));
-        columnHeader.OnGUI(headerRect, 0);
+    GUILayout.BeginVertical();
+    scrollPos = GUILayout.BeginScrollView(scrollPos, false, true); 
 
-        foreach (AnalyzerData data in analyzerList)
+    Rect headerRect = GUILayoutUtility.GetRect(0, columnHeader.height, GUILayout.ExpandWidth(true));
+    columnHeader.OnGUI(headerRect, 0);
+
+    foreach (AnalyzerData data in analyzerList)
+    {
+        GUILayout.BeginHorizontal(matBoxStyle);
+        Rect previewTextureRect = GUILayoutUtility.GetRect(128, 128, 128, 128, GUILayout.Width(128));
+        GUI.DrawTexture(previewTextureRect, AssetPreview.GetAssetPreview(data.mat));
+
+        GUILayout.BeginVertical(GUILayout.Width((position.width - (128+32)) / 2)); // Adjust width to account for padding
+        Material temp = (Material)EditorGUILayout.ObjectField(data.mat, typeof(Material), false, GUILayout.ExpandWidth(true));
+        EditorGUILayout.ObjectField(data.shader, typeof(Shader), false, GUILayout.ExpandWidth(true));
+        string colorProp = SetColorProperty(data.mat);
+
+        if (!string.IsNullOrEmpty(colorProp))
         {
-            GUILayout.BeginHorizontal(matBoxStyle);
-            Rect previewTextureRect = GUILayoutUtility.GetRect(128, 128, 128, 128, GUILayout.Width(128));
-            GUI.DrawTexture(previewTextureRect, AssetPreview.GetAssetPreview(data.mat));
-
-            GUILayout.BeginVertical(GUILayout.Width((position.width - (128+32)) / 2)); // Adjust width to account for padding
-            Material temp = (Material)EditorGUILayout.ObjectField(data.mat, typeof(Material), false, GUILayout.ExpandWidth(true));
-            EditorGUILayout.ObjectField(data.shader, typeof(Shader), false, GUILayout.ExpandWidth(true));
-            string colorProp = SetColorProperty(data.mat);
-
-            if (!string.IsNullOrEmpty(colorProp))
+            EditorGUI.BeginChangeCheck();
+            tintColor = EditorGUILayout.ColorField(data.mat.GetColor(colorProp), GUILayout.ExpandWidth(true));
+            if (EditorGUI.EndChangeCheck())
             {
-                EditorGUI.BeginChangeCheck();
-                tintColor = EditorGUILayout.ColorField(data.mat.GetColor(colorProp), GUILayout.ExpandWidth(true));
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(data.mat, "Base color change on " + data.mat.name);
-                    data.mat.SetColor(colorProp, tintColor);
-                }
+                Undo.RecordObject(data.mat, "Base color change on " + data.mat.name);
+                data.mat.SetColor(colorProp, tintColor);
             }
-
-            string keywords = string.Join(" ", data.shaderKeywords);
-            GUILayout.TextArea(keywords, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-            GUILayout.EndVertical();
-
-            GUILayout.BeginVertical(GUILayout.Width((position.width - (128+32)) / 2)); // Adjust width to account for padding
-            data.ShowGameObject = EditorGUILayout.Foldout(data.ShowGameObject, "Show " + data.gameObjects.Count + " GameObjects", EditorStyles.foldout);
-            if (data.ShowGameObject)
-            {
-                foreach (GameObject go in data.gameObjects)
-                {
-                    EditorGUILayout.ObjectField(go, typeof(GameObject), false, GUILayout.ExpandWidth(true));
-                }
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.EndHorizontal();
         }
 
-        GUILayout.EndScrollView();
+        string keywords = string.Join(" ", data.shaderKeywords);
+        GUILayout.TextArea(keywords, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
         GUILayout.EndVertical();
-    }
-}
 
+        GUILayout.BeginVertical(GUILayout.Width((position.width - (128+32)) / 2)); // Adjust width to account for padding
+        data.ShowGameObject = EditorGUILayout.Foldout(data.ShowGameObject, "Show " + data.gameObjects.Count + " GameObjects", EditorStyles.foldout);
+        if (data.ShowGameObject)
+        {
+            foreach (GameObject go in data.gameObjects)
+            {
+                EditorGUILayout.ObjectField(go, typeof(GameObject), false, GUILayout.ExpandWidth(true));
+            }
+        }
+        GUILayout.EndVertical();
+
+        GUILayout.EndHorizontal();
+    }
+
+    GUILayout.EndScrollView();
+    GUILayout.EndVertical();
+    
+}
 
     void OnHierarchyChange()
     {
